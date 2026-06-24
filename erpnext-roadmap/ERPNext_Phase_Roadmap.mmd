@@ -1,0 +1,135 @@
+%% ERPNext Phase Roadmap + Dependency Map — AMDG / ABES
+%% Source of truth: ERPNext_Work_Plan ("Detailed Tasks" sheet) + 6/23 Change Log (v2).
+%% Node LABELS follow the actual sheet text (sheet wins). STATUS colors are applied
+%% from the 6/23 Change Log decisions, because the sheet has no Status/Blocked/Blocked By
+%% columns (its only Status column reads "Not Started" for every phase — see README conflicts).
+%% Edit nodes/edges freely; statuses are set via the classDef classes below.
+
+flowchart TB
+  %% ============ STATUS LEGEND ============
+  subgraph LEGEND["LEGEND — Status (fill color); diamond = open gating decision"]
+    direction LR
+    L1["Not Started"]:::notstarted
+    L2["In Progress"]:::inprogress
+    L3["Blocked"]:::blocked
+    L4["On Hold"]:::onhold
+    L5["Deferred"]:::deferred
+    L6{"Gating Decision"}:::decision
+  end
+
+  %% ============ CROSS-CUTTING OVERLAY (parallel, spans all phases) ============
+  subgraph XC["CROSS-CUTTING OVERLAY — Infrastructure Foundation (Phase 5) + Security &amp; HIPAA · runs in parallel"]
+    direction TB
+    INFRA8["Infra Blueprint — sample Azure/IaaS env<br/>(Tom/Nexera, due ~Thu 6/25)<br/>dev/staging/prod · RPO/RTO/HA"]:::inprogress
+    HOST{"Hosting Provider + BAA<br/>Hetzner → Azure/AWS/GCP<br/>host must sign BAA = hard stop"}:::decision
+    SEC["5.1–5.6 Security &amp; HIPAA<br/>Tailscale · 2FA · IP allow-list · SSH audit · HIPAA logging · pen test"]:::notstarted
+    INFRA8 -.->|informs| HOST
+  end
+
+  %% ============ PHASE 1 ============
+  subgraph P1["PHASE 1 — Financial Foundation (+ Data Foundation) · CRITICAL PATH"]
+    direction TB
+    P1MIG["1.1–1.6 QBO Migration (one-time + cutover)<br/>COA · Customers · Vendors · Opening Balances<br/>(paused to prioritize AP proof)"]:::onhold
+    P1DOC["1.7 Document Migration Mappings,<br/>Observations + Findings (Russ handoff)"]:::onhold
+    UATDEC{"UAT Approach Decision<br/>parallel double-entry vs cutover w/ failback"}:::decision
+    P1TEST["1.8 Comprehensive BDD Tests<br/>(Test Plan — Dual vs Cutoff)"]:::blocked
+    P1UAT["1.9 End-to-End Testing &amp; UAT"]:::blocked
+    P1DEPLOY["1.10 Deploy<br/>(sheet: Manus · call: drop Manus → Cloud)"]:::blocked
+    DATADEC{"Data Consultant Agreement / Onboarding<br/>(owns validation + schema mapping)"}:::decision
+    P1VALID["1.11 Validate Migrated Data*<br/>P&amp;L totals · entity definitions<br/>*implied by call; not yet a sheet row"]:::blocked
+  end
+
+  %% ============ PHASE 2 ============
+  subgraph P2["PHASE 2 — Operational Automation"]
+    direction TB
+    subgraph P2A["2A — Financial Automation"]
+      direction TB
+      P2_1["2.1 Design Plaid Bank Feed Architecture"]:::notstarted
+      P2_2["2.2 Implement Plaid API Integration<br/>(feeds live)"]:::notstarted
+      P2_3["2.3 AP Parse + Extraction<br/>(Russ — active)"]:::inprogress
+      P2_4["2.3/2.4 AP Recon"]:::notstarted
+      P2_5["2.5 AP BDD Tests<br/>(Dual vs Cutoff)"]:::notstarted
+    end
+    subgraph P2B["2B — Document Management"]
+      direction TB
+      PRDDEC{"Document-Management PRD Review<br/>confirm definition before building"}:::decision
+      P2_DOC["2.6–2.9 Paperless-ngx / Two-Way Sync<br/>(two-way likely NOT doing)"]:::onhold
+    end
+    subgraph P2C["2C — Email Ingestion &amp; AI Talent"]
+      direction TB
+      MAILDEC{"Mail Provider Selection<br/>(PrimitiveMail removed → cloud mail)"}:::decision
+      P2_10["2.10 Mailbox Ingestion<br/>(Mail [TBD] webhook pipeline)"]:::blocked
+      CHARLIEDEC{"Ownership Confirmation w/ Charlie<br/>(HR resume workstream?)"}:::decision
+      P2_TALENT["2.11–2.13 Resume Parsing /<br/>Email-to-ATS / AI Talent"]:::blocked
+    end
+  end
+
+  %% ============ PHASE 3 ============
+  subgraph P3["PHASE 3 — Clinical Foundation (DEFERRED — 'Q5')"]
+    direction TB
+    CLINDEC{"Financial-Foundation Priority +<br/>Clinical-Replace Decision (with Bryan)<br/>replace at all? parallel vs serial?"}:::decision
+    P3ALL["3.1–3.8 RethinkBH Migration (HIPAA)<br/>Patients · Providers · Appointments<br/>PHI access controls · HIPAA audit"]:::deferred
+  end
+
+  %% ============ PHASE 4 ============
+  subgraph P4["PHASE 4 — Advanced Scheduling &amp; UI (DEFERRED · sits OUTSIDE ERPNext)"]
+    direction TB
+    P4ALL["4.1–4.10 OR-Tools constraint engine · AI routing<br/>NL scheduling · calendar sync · HIPAA notifications · UI"]:::deferred
+  end
+
+  %% ============ PHASE 6 OVERLAY ============
+  subgraph P6["PHASE 6 OVERLAY — Ongoing DevSecOps + Admin (spans all phases)"]
+    direction TB
+    P6ALL["SecOps · tenant admin · maintenance<br/>(name the owner; may be outsourced)"]:::notstarted
+  end
+
+  %% ============ GATING / CRITICAL-PATH CALLOUT ============
+  subgraph NOTES["⚠ CRITICAL PATH &amp; OPEN GATING DECISIONS"]
+    direction TB
+    CP["CRITICAL PATH → Infrastructure (Hosting + BAA) and Phase 1 Financial Foundation<br/>gate almost everything downstream (deployment + all PHI/clinical work)."]:::critical
+    GD["OPEN DECISIONS → UAT model (parallel vs cutover) · Data-consultant onboarding ·<br/>Doc-mgmt PRD definition · Mail provider · Resume-parsing ownership (Charlie) ·<br/>Clinical replace? parallel vs serial (Bryan) · BAA confirmation w/ cloud AE/SE"]:::critical
+  end
+
+  %% ============ DEPENDENCY EDGES (Blocked By → blocked item; rendered red) ============
+  HOST ==> P1DEPLOY
+  HOST ==> P3ALL
+  UATDEC ==> P1TEST
+  UATDEC ==> P1UAT
+  DATADEC ==> P1VALID
+  P2_2 ==> P2_4
+  P2_3 ==> P2_5
+  P2_4 ==> P2_5
+  PRDDEC ==> P2_DOC
+  MAILDEC ==> P2_10
+  CHARLIEDEC ==> P2_TALENT
+  CLINDEC ==> P3ALL
+  CLINDEC ==> P4ALL
+  P1MIG ==>|"financial cutover gates Phase 2 build<br/>(2.3 AP Parse runs in parallel now)"| P2A
+  P3ALL ==> P4ALL
+
+  %% ---- Soft tie: scheduling's only ERP integration ----
+  P4ALL -.->|"AR reconciliation — only ERP tie<br/>(attended? services? cost? reconcile)"| P2A
+
+  %% ============ STATUS COLORS ============
+  classDef notstarted fill:#F2F2F2,stroke:#999999,color:#000000;
+  classDef inprogress fill:#BDD7EE,stroke:#2E75B6,color:#000000;
+  classDef blocked fill:#F4B7B7,stroke:#C00000,color:#000000;
+  classDef onhold fill:#FCE4A6,stroke:#BF9000,color:#000000;
+  classDef deferred fill:#D9D9D9,stroke:#808080,color:#555555;
+  classDef decision fill:#FFF2CC,stroke:#BF9000,stroke-width:2px,color:#000000;
+  classDef critical fill:#FFFFFF,stroke:#C00000,stroke-width:2px,color:#000000;
+
+  %% ============ EDGE STYLES ============
+  %% Edge 0 = INFRA8-.->HOST (soft "informs"); edges 1-15 = red blocking; edge 16 = AR soft tie.
+  linkStyle 0 stroke:#BF9000,stroke-width:1.5px,stroke-dasharray:5 5;
+  linkStyle 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15 stroke:#C00000,stroke-width:2px;
+  linkStyle 16 stroke:#2E75B6,stroke-width:1.5px,stroke-dasharray:4 4;
+
+  %% ============ SUBGRAPH BANDS ============
+  style XC fill:#EAF4FB,stroke:#2E75B6,stroke-width:1px;
+  style P6 fill:#F3EAFB,stroke:#7030A0,stroke-width:1px;
+  style P1 fill:#FFFBF0,stroke:#BF9000,stroke-width:2px;
+  style P3 fill:#F7F7F7,stroke:#A6A6A6,stroke-dasharray:4 4;
+  style P4 fill:#F7F7F7,stroke:#A6A6A6,stroke-dasharray:4 4;
+  style NOTES fill:#FFF4F4,stroke:#C00000,stroke-width:1px;
+  style LEGEND fill:#FFFFFF,stroke:#999999,stroke-width:1px;
