@@ -1,0 +1,141 @@
+%% AMDG / ABES — FUNCTIONAL ARCHITECTURE (v0.1 starting draft)
+%% Source: Fathom call "Hannah x Mike // Connect on Architecture" — 2026-06-24
+%%         (Mike Adkins, Hannah Schuele, Cissy Byrd) https://fathom.video/calls/723282376
+%% Purpose: the "fifth-grader crayon" functional map Mike committed to in the call —
+%%   one page, boxes by CAPABILITY, color = readiness heat-map, to set vision & align the team.
+%% This is a STARTING POINT to build from. Heat-map status is a first read from the call; correct freely.
+%% Naming flagged for confirmation: "Affine"(=AFFiNE?), "AppFlowy", "OpenClaw", "Hermes",
+%%   "AIPS"(clinical PHI source), "TIC/Cacheware" C++ pipeline, "Hetzner".
+
+flowchart TB
+  %% ===== READINESS HEAT-MAP LEGEND =====
+  subgraph LEGEND["READINESS HEAT-MAP  ·  diamond = open decision"]
+    direction LR
+    L1["In place / operational"]:::ready
+    L2["In progress / building"]:::building
+    L3["Planned / not started"]:::planned
+    L4["Gap / at risk"]:::gap
+    L5{"Open decision"}:::decision
+  end
+
+  %% ===== ACCESS & IDENTITY (gates everything) =====
+  subgraph ACCESS["ACCESS &amp; IDENTITY  (gates the whole environment)"]
+    direction LR
+    JC["JumpCloud — SSO / Identity<br/>audit maps: agent · person · process"]:::building
+    TS["Tailscale — zero-trust tunnel<br/>tailnet-only; no open SSH/console"]:::ready
+  end
+
+  %% ===== 1. SOURCES / SYSTEM OF RECORD =====
+  subgraph SRC["1 · SOURCES &amp; SYSTEM OF RECORD  (business data)"]
+    direction LR
+    ERP["ERPNext<br/>Ops · Financials · AP/AR"]:::building
+    RT["Rethink<br/>clinical operations"]:::ready
+    QB["QuickBooks<br/>legacy financials"]:::ready
+    EM["Inbound Email &amp; Docs<br/>invoices · parent emails"]:::building
+  end
+
+  %% ===== 2. SENSITIVE / PHI ZONE =====
+  subgraph PHI["2 · SENSITIVE / PHI ZONE  (segmented · HIPAA)"]
+    direction LR
+    AIPS["AIPS — Clinical PHI store<br/>patient &amp; parent records<br/>(kept separate; Azure candidate)"]:::building
+  end
+
+  %% ===== 3. ANONYMIZATION — AIR-GAP DMZ =====
+  subgraph DMZ["3 · ANONYMIZATION — AIR-GAP DMZ  (HIPAA boundary · VLAN30 DMZ / VLAN20 AI)"]
+    direction LR
+    OC["OpenClaw — execution layer<br/>de-identify · sanitize · scoped data"]:::building
+    HM["Hermes — orchestration layer<br/>metadata-only routing"]:::building
+  end
+
+  %% ===== 4. DATA PIPELINE & WAREHOUSE =====
+  subgraph PIPE["4 · DATA PIPELINE &amp; WAREHOUSE"]
+    direction LR
+    HASH["Raw hash / parse<br/>TIC (Cacheware) C++ pipeline"]:::ready
+    PKG["Packaging<br/>de-identified, anonymized sets"]:::building
+    DW{"Data Warehouse<br/>HOST TBD ★ (Hetzner vs Azure vs AWS)"}:::decision
+  end
+
+  %% ===== 5. INTELLIGENCE LAYER =====
+  subgraph INT["5 · INTELLIGENCE LAYER"]
+    direction LR
+    AN["Analysis &amp; Agents<br/>inference · automation"]:::building
+    LOC["Local inference<br/>Ollama on local box"]:::planned
+    CLD["Cloud LLM escalation<br/>Anthropic / OpenAI"]:::planned
+  end
+
+  %% ===== 6. BUSINESS INTELLIGENCE =====
+  subgraph BI["6 · BUSINESS INTELLIGENCE / REPORTING"]
+    direction LR
+    MB["Metabase<br/>dashboards · MCP · CLI"]:::ready
+    INS["ERPNext Insights<br/>candidate BI tool"]:::planned
+  end
+
+  %% ===== INTERNAL COLLABORATION — CONTROL PLANES =====
+  subgraph COLLAB["INTERNAL COLLABORATION — CONTROL PLANES  (keep AI &amp; human work separate → no schema corruption)"]
+    direction LR
+    PLANE["Plane — HUMAN control plane<br/>PM · tasks · curated, finished work"]:::building
+    AF["AppFlowy — AI / AGENT control plane<br/>agent-driven work (e.g. clause version-control)"]:::planned
+    AFFINE["Affine — INTAKE / sandbox<br/>unstructured, in-progress (replaces Obsidian/OneNote/Whiteboard)"]:::planned
+  end
+
+  %% ===== INFRASTRUCTURE / HOSTING (reference band) =====
+  subgraph HOST["INFRASTRUCTURE / HOSTING  (current → target; see open decisions)"]
+    direction LR
+    HZ["Hetzner — build/test/own-built<br/>ERPNext + internal stack (today)"]:::ready
+    AZ{"Azure — HIPAA / BAA out-of-box<br/>sensitive data + warehouse candidate"}:::decision
+    AWSN["AWS — TIC pipeline / processing<br/>(BYO models, cheaper compute)"]:::ready
+    LOCAL{"Hybrid local box — inference<br/>data sovereignty vs ops overhead"}:::decision
+    GG["Google → M365 — Veronica's tools<br/>migration in flight"]:::building
+  end
+
+  %% ===== DEVSECOPS / SRE OVERLAY =====
+  subgraph SECOPS["DevSecOps / SRE OVERLAY  (compliance · audit · reliability — spans all)"]
+    direction LR
+    KUMA["Monitoring (Uptime Kuma) · Backups<br/>Caddy→NGINX reverse proxy"]:::ready
+    DSO["DevSecOps / SRE owner — TO HIRE<br/>HIPAA audit + reliability = full-time job"]:::gap
+  end
+
+  %% ===== FLOWS =====
+  JC --> TS
+  TS ==> ERP
+  TS ==> AIPS
+  QB --> ERP
+  RT ==> AIPS
+  EM ==> OC
+  AIPS ==> OC
+  OC ==> HM
+  HM ==> HASH
+  HASH ==> PKG
+  PKG ==> DW
+  ERP ==> DW
+  DW ==> AN
+  DW ==> MB
+  DW ==> INS
+  AN --> LOC
+  LOC -.->|escalate de-identified prompt| CLD
+  AN ==> MB
+  PLANE -.->|curate / consume| DW
+  AF -.->|agents| AN
+
+  %% ===== HEAT-MAP COLORS =====
+  classDef ready fill:#C6E0B4,stroke:#548235,color:#000000;
+  classDef building fill:#BDD7EE,stroke:#2E75B6,color:#000000;
+  classDef planned fill:#F2F2F2,stroke:#999999,color:#000000;
+  classDef gap fill:#F4B7B7,stroke:#C00000,color:#000000;
+  classDef decision fill:#FFF2CC,stroke:#BF9000,stroke-width:2px,color:#000000;
+
+  %% ===== EDGE STYLES =====
+  %% 0,1,2 access(purple) · 4-10 HIPAA path(red) · 16 escalation(blue) · 18,19 collab(grey)
+  linkStyle 0,1,2 stroke:#7030A0,stroke-width:2px;
+  linkStyle 4,5,6,7,8,9,10 stroke:#C00000,stroke-width:2.5px;
+  linkStyle 16 stroke:#2E75B6,stroke-width:1.5px,stroke-dasharray:4 4;
+  linkStyle 18,19 stroke:#808080,stroke-width:1.5px,stroke-dasharray:5 5;
+
+  %% ===== BANDS =====
+  style ACCESS fill:#F3EAFB,stroke:#7030A0;
+  style PHI fill:#FDECEA,stroke:#C00000;
+  style DMZ fill:#FDECEA,stroke:#C00000,stroke-width:2px;
+  style HOST fill:#EAF4FB,stroke:#2E75B6;
+  style SECOPS fill:#FFF7E6,stroke:#BF9000;
+  style COLLAB fill:#F4F7F2,stroke:#548235;
+  style LEGEND fill:#FFFFFF,stroke:#999999;
