@@ -1,141 +1,165 @@
-%% AMDG / ABES — FUNCTIONAL ARCHITECTURE (v0.1 starting draft)
-%% Source: Fathom call "Hannah x Mike // Connect on Architecture" — 2026-06-24
-%%         (Mike Adkins, Hannah Schuele, Cissy Byrd) https://fathom.video/calls/723282376
-%% Purpose: the "fifth-grader crayon" functional map Mike committed to in the call —
-%%   one page, boxes by CAPABILITY, color = readiness heat-map, to set vision & align the team.
-%% This is a STARTING POINT to build from. Heat-map status is a first read from the call; correct freely.
-%% Naming flagged for confirmation: "Affine"(=AFFiNE?), "AppFlowy", "OpenClaw", "Hermes",
-%%   "AIPS"(clinical PHI source), "TIC/Cacheware" C++ pipeline, "Hetzner".
+%% AMDG / ABES — FUNCTIONAL ARCHITECTURE  v0.2  (reconciled with Hannah's OmniSync)
+%% Sources:
+%%   - Fathom call "Hannah x Mike // Connect on Architecture" 2026-06-24 (Mike, Hannah, Cissy)
+%%   - Hannah's OmniSync repo dropped in Box "AMDG InfraDesign" (omnisync README, north-star,
+%%     omnisync-gated-staged-architecture). OmniSync structure is authoritative; business
+%%     overlays (ERPNext, BI, access, hosting, DevSecOps) come from the call.
+%% Altitude: executive functional map + readiness heat-map (Mike's "where are we" view).
+%% v0.2 corrects v0.1: OpenClaw+Hermes are the CONTROL PLANE (execute+orchestrate), not a DMZ;
+%%   the "air-gap" = default-deny INGESTION GATES; the "data warehouse" = the local-first
+%%   CANONICAL SUBSTRATE (custody + graph + object store); all human surfaces are PROJECTIONS.
 
 flowchart TB
-  %% ===== READINESS HEAT-MAP LEGEND =====
-  subgraph LEGEND["READINESS HEAT-MAP  ·  diamond = open decision"]
+  %% ================= LEGEND =================
+  subgraph LEGEND["READINESS HEAT-MAP  ·  hexagon = gate  ·  red hexagon = HUMAN gate  ·  diamond = open decision"]
     direction LR
     L1["In place / operational"]:::ready
     L2["In progress / building"]:::building
-    L3["Planned / not started"]:::planned
+    L3["Planned / target"]:::planned
     L4["Gap / at risk"]:::gap
     L5{"Open decision"}:::decision
   end
 
-  %% ===== ACCESS & IDENTITY (gates everything) =====
-  subgraph ACCESS["ACCESS &amp; IDENTITY  (gates the whole environment)"]
+  %% ============ CONTROL PLANE (spans top) ============
+  subgraph CTRL["CONTROL PLANE — REASON → ORCHESTRATE → EXECUTE  (kept separate at every stage)"]
     direction LR
-    JC["JumpCloud — SSO / Identity<br/>audit maps: agent · person · process"]:::building
-    TS["Tailscale — zero-trust tunnel<br/>tailnet-only; no open SSH/console"]:::ready
+    REASON["Local AI · REASON<br/>(today: Claude Desktop / Code)"]:::planned
+    HERMES["Hermes · ORCHESTRATE<br/>(today: command queue)"]:::planned
+    OPENCLAW["OpenClaw fleet · EXECUTE<br/>(today: Notion AI / Claude Code)"]:::planned
+    REASON -->|reason| HERMES -->|orchestrate| OPENCLAW
   end
 
-  %% ===== 1. SOURCES / SYSTEM OF RECORD =====
-  subgraph SRC["1 · SOURCES &amp; SYSTEM OF RECORD  (business data)"]
+  %% ============ ZONE 1 · INPUTS ============
+  subgraph Z1["ZONE 1 · INPUTS  (disparate, unsorted)"]
     direction LR
-    ERP["ERPNext<br/>Ops · Financials · AP/AR"]:::building
-    RT["Rethink<br/>clinical operations"]:::ready
-    QB["QuickBooks<br/>legacy financials"]:::ready
-    EM["Inbound Email &amp; Docs<br/>invoices · parent emails"]:::building
+    ZP["Zoom Phone ★ anchor lane<br/>calls · recordings · SMS"]:::building
+    EM["Email (Gmail / Outlook)"]:::building
+    TR["Transcripts (Fireflies / Fathom)"]:::ready
+    DOC["Documents · calendar · notes"]:::building
+    ERP["ERPNext · Rethink · QuickBooks<br/>business system-of-record"]:::building
   end
 
-  %% ===== 2. SENSITIVE / PHI ZONE =====
-  subgraph PHI["2 · SENSITIVE / PHI ZONE  (segmented · HIPAA)"]
+  PRE{{"pre-build validation (build-time)"}}:::gate
+
+  %% ============ ZONE 2 · GATED SORTING PIPELINE ============
+  subgraph Z2["ZONE 2 · GATED SORTING PIPELINE"]
     direction LR
-    AIPS["AIPS — Clinical PHI store<br/>patient &amp; parent records<br/>(kept separate; Azure candidate)"]:::building
+    FAST["FastAPI intake receiver"]:::building
+    NATS[("NATS queue · intake.raw")]:::building
+    WRK["Workers<br/>metadata · recording · transcript · parser"]:::building
+    OLL["Ollama entity extraction<br/>local 8B/14B + bge-m3 · cloud escalation"]:::building
+    FAST --> NATS --> WRK --> OLL
   end
 
-  %% ===== 3. ANONYMIZATION — AIR-GAP DMZ =====
-  subgraph DMZ["3 · ANONYMIZATION — AIR-GAP DMZ  (HIPAA boundary · VLAN30 DMZ / VLAN20 AI)"]
+  %% ============ INGESTION GATES (the HIPAA boundary / the old "air-gap") ============
+  subgraph GATES["INGESTION GATES · DEFAULT-DENY  (the HIPAA boundary — data stays local unless promoted)"]
     direction LR
-    OC["OpenClaw — execution layer<br/>de-identify · sanitize · scoped data"]:::building
-    HM["Hermes — orchestration layer<br/>metadata-only routing"]:::building
+    LAYER{{"per-task + dependency-layer gates"}}:::gate
+    HUMAN{{"HUMAN gates<br/>BAA · key ceremony · compliance · go/no-go"}}:::human
+    RUNTIME{{"runtime data gates"}}:::gate
+    PROMOTE{{"promote vs stay-local"}}:::gate
+    LAYER --> HUMAN --> RUNTIME --> PROMOTE
   end
 
-  %% ===== 4. DATA PIPELINE & WAREHOUSE =====
-  subgraph PIPE["4 · DATA PIPELINE &amp; WAREHOUSE"]
+  %% ============ ZONE 3 · CANONICAL SUBSTRATE ============
+  subgraph Z3["ZONE 3 · CANONICAL SUBSTRATE  (local-first — the data you OWN; = the 'data warehouse' decision)"]
     direction LR
-    HASH["Raw hash / parse<br/>TIC (Cacheware) C++ pipeline"]:::ready
-    PKG["Packaging<br/>de-identified, anonymized sets"]:::building
-    DW{"Data Warehouse<br/>HOST TBD ★ (Hetzner vs Azure vs AWS)"}:::decision
+    CUST[("Postgres custody<br/>append-only, immutable")]:::building
+    GRAPH[("Neo4j + Graphiti<br/>knowledge graph")]:::building
+    OBJ[("MinIO object store<br/>recordings + pgvector")]:::building
+    API["OmniSync API"]:::building
+    DWHOST{"Substrate HOST ★<br/>Hetzner vs Azure vs hybrid-local"}:::decision
+    CUST --> API
+    GRAPH --> API
+    OBJ --> API
   end
 
-  %% ===== 5. INTELLIGENCE LAYER =====
-  subgraph INT["5 · INTELLIGENCE LAYER"]
+  %% ============ ZONE 4 · PROJECTION SURFACES ============
+  subgraph Z4["ZONE 4 · PROJECTION SURFACES  (derived · staged · never source of truth)"]
     direction LR
-    AN["Analysis &amp; Agents<br/>inference · automation"]:::building
-    LOC["Local inference<br/>Ollama on local box"]:::planned
-    CLD["Cloud LLM escalation<br/>Anthropic / OpenAI"]:::planned
+    S1["Stage 1 · Notion orchestrator — CURRENT"]:::building
+    S2["Stage 2 · Notion control plane"]:::planned
+    S3["Stage 3 · AppFlowy (control) + Affine (content) — TARGET"]:::planned
+    PLANE["Plane — team PM surface<br/>(reconcile vs Notion/AppFlowy)"]:::building
+    EDGE["Notion → sanitized edge (egress)"]:::planned
+    S1 --> S2 -.-> S3 -.-> EDGE
   end
 
-  %% ===== 6. BUSINESS INTELLIGENCE =====
-  subgraph BI["6 · BUSINESS INTELLIGENCE / REPORTING"]
+  %% ============ BUSINESS INTELLIGENCE ============
+  subgraph BI["BUSINESS INTELLIGENCE  (consumes canonical via API)"]
     direction LR
-    MB["Metabase<br/>dashboards · MCP · CLI"]:::ready
-    INS["ERPNext Insights<br/>candidate BI tool"]:::planned
+    MB["Metabase · dashboards · MCP · CLI<br/>(ABES telephony / billing — TIC pipeline)"]:::ready
+    INS["ERPNext Insights (candidate)"]:::planned
   end
 
-  %% ===== INTERNAL COLLABORATION — CONTROL PLANES =====
-  subgraph COLLAB["INTERNAL COLLABORATION — CONTROL PLANES  (keep AI &amp; human work separate → no schema corruption)"]
+  %% ============ CROSS-CUTTING BANDS ============
+  subgraph ACCESS["ACCESS &amp; IDENTITY (gates the environment)"]
     direction LR
-    PLANE["Plane — HUMAN control plane<br/>PM · tasks · curated, finished work"]:::building
-    AF["AppFlowy — AI / AGENT control plane<br/>agent-driven work (e.g. clause version-control)"]:::planned
-    AFFINE["Affine — INTAKE / sandbox<br/>unstructured, in-progress (replaces Obsidian/OneNote/Whiteboard)"]:::planned
+    JC["JumpCloud — SSO / identity audit"]:::building
+    TS["Tailscale — zero-trust segmentation"]:::ready
   end
 
-  %% ===== INFRASTRUCTURE / HOSTING (reference band) =====
-  subgraph HOST["INFRASTRUCTURE / HOSTING  (current → target; see open decisions)"]
+  subgraph COMP["COMPLIANCE · HIPAA + DATA SOVEREIGNTY (spans all)"]
     direction LR
-    HZ["Hetzner — build/test/own-built<br/>ERPNext + internal stack (today)"]:::ready
-    AZ{"Azure — HIPAA / BAA out-of-box<br/>sensitive data + warehouse candidate"}:::decision
-    AWSN["AWS — TIC pipeline / processing<br/>(BYO models, cheaper compute)"]:::ready
-    LOCAL{"Hybrid local box — inference<br/>data sovereignty vs ops overhead"}:::decision
-    GG["Google → M365 — Veronica's tools<br/>migration in flight"]:::building
+    HIP["CMK encryption · TLS/HMAC · audit logging · row-level access · default-deny · local-first"]:::building
   end
 
-  %% ===== DEVSECOPS / SRE OVERLAY =====
-  subgraph SECOPS["DevSecOps / SRE OVERLAY  (compliance · audit · reliability — spans all)"]
+  subgraph HOST["INFRASTRUCTURE / HOSTING (current → target)"]
     direction LR
-    KUMA["Monitoring (Uptime Kuma) · Backups<br/>Caddy→NGINX reverse proxy"]:::ready
-    DSO["DevSecOps / SRE owner — TO HIRE<br/>HIPAA audit + reliability = full-time job"]:::gap
+    HZ["Hetzner — build/test/own (today)"]:::ready
+    AZ{"Azure — BAA out-of-box / sensitive"}:::decision
+    AWSN["AWS — TIC pipeline / processing"]:::ready
+    LOCAL{"Hybrid local box — inference"}:::decision
   end
 
-  %% ===== FLOWS =====
-  JC --> TS
-  TS ==> ERP
-  TS ==> AIPS
-  QB --> ERP
-  RT ==> AIPS
-  EM ==> OC
-  AIPS ==> OC
-  OC ==> HM
-  HM ==> HASH
-  HASH ==> PKG
-  PKG ==> DW
-  ERP ==> DW
-  DW ==> AN
-  DW ==> MB
-  DW ==> INS
-  AN --> LOC
-  LOC -.->|escalate de-identified prompt| CLD
-  AN ==> MB
-  PLANE -.->|curate / consume| DW
-  AF -.->|agents| AN
+  subgraph SEC["DevSecOps / SRE OVERLAY (compliance · audit · reliability)"]
+    direction LR
+    KUMA["Uptime Kuma · backups · NGINX"]:::ready
+    DSO["DevSecOps / SRE owner — TO HIRE"]:::gap
+  end
 
-  %% ===== HEAT-MAP COLORS =====
+  %% ================= FLOWS =================
+  Z1 --> PRE
+  PRE --> FAST
+  OLL ==> LAYER
+  PROMOTE ==> CUST
+  PROMOTE ==> GRAPH
+  PROMOTE ==> OBJ
+  API --> S1
+  API --> MB
+  API --> INS
+  API --> PLANE
+  HERMES -.operates.-> FAST
+  OPENCLAW -.operates.-> WRK
+  TS ==> FAST
+
+  %% ================= HEAT-MAP COLORS =================
   classDef ready fill:#C6E0B4,stroke:#548235,color:#000000;
   classDef building fill:#BDD7EE,stroke:#2E75B6,color:#000000;
   classDef planned fill:#F2F2F2,stroke:#999999,color:#000000;
   classDef gap fill:#F4B7B7,stroke:#C00000,color:#000000;
   classDef decision fill:#FFF2CC,stroke:#BF9000,stroke-width:2px,color:#000000;
+  classDef gate fill:#FFFBEB,stroke:#B45309,stroke-width:2px,color:#78350F;
+  classDef human fill:#FEF2F2,stroke:#B91C1C,stroke-width:2.5px,color:#7F1D1D;
 
-  %% ===== EDGE STYLES =====
-  %% 0,1,2 access(purple) · 4-10 HIPAA path(red) · 16 escalation(blue) · 18,19 collab(grey)
-  linkStyle 0,1,2 stroke:#7030A0,stroke-width:2px;
-  linkStyle 4,5,6,7,8,9,10 stroke:#C00000,stroke-width:2.5px;
-  linkStyle 16 stroke:#2E75B6,stroke-width:1.5px,stroke-dasharray:4 4;
-  linkStyle 18,19 stroke:#808080,stroke-width:1.5px,stroke-dasharray:5 5;
+  %% ================= EDGE STYLES =================
+  %% indices: 0,1 control-plane chain · 2-4 Z2 chain · 5-7 gates chain · 8-10 Z3→API ·
+  %%   11-13 Z4 chain · 14 Z1→PRE · 15 PRE→FAST · 16 OLL→LAYER(red) ·
+  %%   17,18,19 PROMOTE→canonical(red) · 20-23 API→surfaces · 24,25 control operates(grey) · 26 TS access(purple)
+  linkStyle 16,17,18,19 stroke:#C00000,stroke-width:2.5px;
+  linkStyle 24,25 stroke:#808080,stroke-width:1.5px,stroke-dasharray:5 5;
+  linkStyle 26 stroke:#7030A0,stroke-width:2px;
 
-  %% ===== BANDS =====
+  %% ================= BANDS =================
+  style CTRL fill:#EEF2FF,stroke:#3730A3;
+  style Z1 fill:#F8FAFC,stroke:#64748B;
+  style Z2 fill:#FFF7ED,stroke:#C2410C;
+  style GATES fill:#FFFBEB,stroke:#B45309,stroke-width:2px;
+  style Z3 fill:#ECFDF5,stroke:#047857,stroke-width:2px;
+  style Z4 fill:#FDF2F8,stroke:#BE185D;
+  style BI fill:#F4F7F2,stroke:#548235;
   style ACCESS fill:#F3EAFB,stroke:#7030A0;
-  style PHI fill:#FDECEA,stroke:#C00000;
-  style DMZ fill:#FDECEA,stroke:#C00000,stroke-width:2px;
+  style COMP fill:#EFF6FF,stroke:#1D4ED8;
   style HOST fill:#EAF4FB,stroke:#2E75B6;
-  style SECOPS fill:#FFF7E6,stroke:#BF9000;
-  style COLLAB fill:#F4F7F2,stroke:#548235;
+  style SEC fill:#FFF7E6,stroke:#BF9000;
   style LEGEND fill:#FFFFFF,stroke:#999999;

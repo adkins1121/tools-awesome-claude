@@ -1,216 +1,231 @@
-<!DOCTYPE html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>AMDG / ABES — Functional Architecture (v0.1)</title>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AMDG / ABES — Functional Architecture v0.2 (OmniSync-reconciled)</title>
 <style>
  body{margin:0;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#1a1a1a;background:#fafafa}
- header{padding:16px 24px;background:#1f3864;color:#fff}
- header h1{margin:0;font-size:19px} header p{margin:4px 0 0;font-size:12.5px;opacity:.85}
- .bar{display:flex;flex-wrap:wrap;gap:16px;align-items:center;padding:10px 24px;background:#fff;border-bottom:1px solid #e3e3e3;font-size:12.5px}
- .chip{display:inline-flex;align-items:center;gap:6px}
- .sw{width:15px;height:15px;border:1px solid #888;border-radius:3px;display:inline-block}
- .dia{transform:rotate(45deg);width:12px;height:12px;border:2px solid #BF9000;background:#FFF2CC}
+ header{padding:16px 24px;background:#1f3864;color:#fff} header h1{margin:0;font-size:19px} header p{margin:4px 0 0;font-size:12.5px;opacity:.85}
+ .bar{display:flex;flex-wrap:wrap;gap:14px;align-items:center;padding:10px 24px;background:#fff;border-bottom:1px solid #e3e3e3;font-size:12.5px}
+ .chip{display:inline-flex;align-items:center;gap:6px} .sw{width:15px;height:15px;border:1px solid #888;border-radius:3px;display:inline-block}
+ .dia{transform:rotate(45deg);width:12px;height:12px;border:2px solid #BF9000;background:#FFF2CC} .hex{width:15px;height:12px;background:#FFFBEB;border:2px solid #B45309}
  button{font-size:12.5px;padding:6px 12px;border:1px solid #1f3864;background:#fff;color:#1f3864;border-radius:5px;cursor:pointer}
- .wrap{padding:16px 24px}
- .diagram{background:#fff;border:1px solid #e3e3e3;border-radius:8px;padding:10px;overflow:auto}
+ .wrap{padding:16px 24px} .diagram{background:#fff;border:1px solid #e3e3e3;border-radius:8px;padding:10px;overflow:auto}
  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
  .card{background:#fff;border:1px solid #e3e3e3;border-radius:8px;padding:12px 16px}
  .card.green{border-left:5px solid #548235}.card.amber{border-left:5px solid #BF9000}.card.red{border-left:5px solid #C00000}.card.blue{border-left:5px solid #2E75B6}
  .card h2{margin:0 0 6px;font-size:14px;color:#1f3864} ul{margin:4px 0 0 18px;padding:0;font-size:12.5px;line-height:1.55}
- code{background:#eee;padding:1px 5px;border-radius:3px;font-size:11.5px}
- footer{padding:12px 24px;font-size:11.5px;color:#666}
+ code{background:#eee;padding:1px 5px;border-radius:3px;font-size:11.5px} footer{padding:12px 24px;font-size:11.5px;color:#666}
 </style>
-<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
-</head><body>
-<header>
- <h1>AMDG / ABES — Functional Architecture <span style="opacity:.7;font-weight:400">v0.1 starting draft</span></h1>
- <p>A single-source-of-truth functional map to set vision &amp; align the team. Source: Fathom call &ldquo;Hannah x Mike // Connect on Architecture&rdquo; — 2026-06-24 (Mike, Hannah, Cissy). Boxes = capabilities; color = readiness heat-map.</p>
-</header>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script></head><body>
+<header><h1>AMDG / ABES — Functional Architecture <span style="opacity:.7;font-weight:400">v0.2 · reconciled with OmniSync</span></h1>
+<p>Structure = Hannah's OmniSync gated/staged architecture; business overlays + heat-map from the 6/24 architecture call. All human surfaces are projections; canonical state stays local-first.</p></header>
 <div class="bar">
  <span class="chip"><span class="sw" style="background:#C6E0B4"></span>In place</span>
  <span class="chip"><span class="sw" style="background:#BDD7EE"></span>In progress</span>
- <span class="chip"><span class="sw" style="background:#F2F2F2"></span>Planned</span>
- <span class="chip"><span class="sw" style="background:#F4B7B7"></span>Gap / at risk</span>
+ <span class="chip"><span class="sw" style="background:#F2F2F2"></span>Planned/target</span>
+ <span class="chip"><span class="sw" style="background:#F4B7B7"></span>Gap</span>
  <span class="chip"><span class="sw dia"></span>Open decision</span>
- <span class="chip"><b style="color:#C00000">&#8594;</b> red = HIPAA/PHI path</span>
- <span class="chip"><b style="color:#7030A0">&#8594;</b> purple = access</span>
- <span style="flex:1"></span>
- <button id="dl">Download SVG</button>
+ <span class="chip"><span class="hex"></span>gate / <b style="color:#B91C1C">red hex = HUMAN gate</b></span>
+ <span class="chip"><b style="color:#C00000">&#8594;</b> red = gated promotion</span>
+ <span style="flex:1"></span><button id="dl">Download SVG</button>
 </div>
-<div class="wrap">
- <div class="diagram"><pre class="mermaid" id="graph">
-%% AMDG / ABES — FUNCTIONAL ARCHITECTURE (v0.1 starting draft)
-%% Source: Fathom call "Hannah x Mike // Connect on Architecture" — 2026-06-24
-%%         (Mike Adkins, Hannah Schuele, Cissy Byrd) https://fathom.video/calls/723282376
-%% Purpose: the "fifth-grader crayon" functional map Mike committed to in the call —
-%%   one page, boxes by CAPABILITY, color = readiness heat-map, to set vision & align the team.
-%% This is a STARTING POINT to build from. Heat-map status is a first read from the call; correct freely.
-%% Naming flagged for confirmation: "Affine"(=AFFiNE?), "AppFlowy", "OpenClaw", "Hermes",
-%%   "AIPS"(clinical PHI source), "TIC/Cacheware" C++ pipeline, "Hetzner".
+<div class="wrap"><div class="diagram"><pre class="mermaid" id="graph">
+%% AMDG / ABES — FUNCTIONAL ARCHITECTURE  v0.2  (reconciled with Hannah's OmniSync)
+%% Sources:
+%%   - Fathom call "Hannah x Mike // Connect on Architecture" 2026-06-24 (Mike, Hannah, Cissy)
+%%   - Hannah's OmniSync repo dropped in Box "AMDG InfraDesign" (omnisync README, north-star,
+%%     omnisync-gated-staged-architecture). OmniSync structure is authoritative; business
+%%     overlays (ERPNext, BI, access, hosting, DevSecOps) come from the call.
+%% Altitude: executive functional map + readiness heat-map (Mike's "where are we" view).
+%% v0.2 corrects v0.1: OpenClaw+Hermes are the CONTROL PLANE (execute+orchestrate), not a DMZ;
+%%   the "air-gap" = default-deny INGESTION GATES; the "data warehouse" = the local-first
+%%   CANONICAL SUBSTRATE (custody + graph + object store); all human surfaces are PROJECTIONS.
 
 flowchart TB
-  %% ===== READINESS HEAT-MAP LEGEND =====
-  subgraph LEGEND["READINESS HEAT-MAP  ·  diamond = open decision"]
+  %% ================= LEGEND =================
+  subgraph LEGEND["READINESS HEAT-MAP  ·  hexagon = gate  ·  red hexagon = HUMAN gate  ·  diamond = open decision"]
     direction LR
     L1["In place / operational"]:::ready
     L2["In progress / building"]:::building
-    L3["Planned / not started"]:::planned
+    L3["Planned / target"]:::planned
     L4["Gap / at risk"]:::gap
     L5{"Open decision"}:::decision
   end
 
-  %% ===== ACCESS & IDENTITY (gates everything) =====
-  subgraph ACCESS["ACCESS &amp; IDENTITY  (gates the whole environment)"]
+  %% ============ CONTROL PLANE (spans top) ============
+  subgraph CTRL["CONTROL PLANE — REASON → ORCHESTRATE → EXECUTE  (kept separate at every stage)"]
     direction LR
-    JC["JumpCloud — SSO / Identity<br/>audit maps: agent · person · process"]:::building
-    TS["Tailscale — zero-trust tunnel<br/>tailnet-only; no open SSH/console"]:::ready
+    REASON["Local AI · REASON<br/>(today: Claude Desktop / Code)"]:::planned
+    HERMES["Hermes · ORCHESTRATE<br/>(today: command queue)"]:::planned
+    OPENCLAW["OpenClaw fleet · EXECUTE<br/>(today: Notion AI / Claude Code)"]:::planned
+    REASON -->|reason| HERMES -->|orchestrate| OPENCLAW
   end
 
-  %% ===== 1. SOURCES / SYSTEM OF RECORD =====
-  subgraph SRC["1 · SOURCES &amp; SYSTEM OF RECORD  (business data)"]
+  %% ============ ZONE 1 · INPUTS ============
+  subgraph Z1["ZONE 1 · INPUTS  (disparate, unsorted)"]
     direction LR
-    ERP["ERPNext<br/>Ops · Financials · AP/AR"]:::building
-    RT["Rethink<br/>clinical operations"]:::ready
-    QB["QuickBooks<br/>legacy financials"]:::ready
-    EM["Inbound Email &amp; Docs<br/>invoices · parent emails"]:::building
+    ZP["Zoom Phone ★ anchor lane<br/>calls · recordings · SMS"]:::building
+    EM["Email (Gmail / Outlook)"]:::building
+    TR["Transcripts (Fireflies / Fathom)"]:::ready
+    DOC["Documents · calendar · notes"]:::building
+    ERP["ERPNext · Rethink · QuickBooks<br/>business system-of-record"]:::building
   end
 
-  %% ===== 2. SENSITIVE / PHI ZONE =====
-  subgraph PHI["2 · SENSITIVE / PHI ZONE  (segmented · HIPAA)"]
+  PRE{{"pre-build validation (build-time)"}}:::gate
+
+  %% ============ ZONE 2 · GATED SORTING PIPELINE ============
+  subgraph Z2["ZONE 2 · GATED SORTING PIPELINE"]
     direction LR
-    AIPS["AIPS — Clinical PHI store<br/>patient &amp; parent records<br/>(kept separate; Azure candidate)"]:::building
+    FAST["FastAPI intake receiver"]:::building
+    NATS[("NATS queue · intake.raw")]:::building
+    WRK["Workers<br/>metadata · recording · transcript · parser"]:::building
+    OLL["Ollama entity extraction<br/>local 8B/14B + bge-m3 · cloud escalation"]:::building
+    FAST --> NATS --> WRK --> OLL
   end
 
-  %% ===== 3. ANONYMIZATION — AIR-GAP DMZ =====
-  subgraph DMZ["3 · ANONYMIZATION — AIR-GAP DMZ  (HIPAA boundary · VLAN30 DMZ / VLAN20 AI)"]
+  %% ============ INGESTION GATES (the HIPAA boundary / the old "air-gap") ============
+  subgraph GATES["INGESTION GATES · DEFAULT-DENY  (the HIPAA boundary — data stays local unless promoted)"]
     direction LR
-    OC["OpenClaw — execution layer<br/>de-identify · sanitize · scoped data"]:::building
-    HM["Hermes — orchestration layer<br/>metadata-only routing"]:::building
+    LAYER{{"per-task + dependency-layer gates"}}:::gate
+    HUMAN{{"HUMAN gates<br/>BAA · key ceremony · compliance · go/no-go"}}:::human
+    RUNTIME{{"runtime data gates"}}:::gate
+    PROMOTE{{"promote vs stay-local"}}:::gate
+    LAYER --> HUMAN --> RUNTIME --> PROMOTE
   end
 
-  %% ===== 4. DATA PIPELINE & WAREHOUSE =====
-  subgraph PIPE["4 · DATA PIPELINE &amp; WAREHOUSE"]
+  %% ============ ZONE 3 · CANONICAL SUBSTRATE ============
+  subgraph Z3["ZONE 3 · CANONICAL SUBSTRATE  (local-first — the data you OWN; = the 'data warehouse' decision)"]
     direction LR
-    HASH["Raw hash / parse<br/>TIC (Cacheware) C++ pipeline"]:::ready
-    PKG["Packaging<br/>de-identified, anonymized sets"]:::building
-    DW{"Data Warehouse<br/>HOST TBD ★ (Hetzner vs Azure vs AWS)"}:::decision
+    CUST[("Postgres custody<br/>append-only, immutable")]:::building
+    GRAPH[("Neo4j + Graphiti<br/>knowledge graph")]:::building
+    OBJ[("MinIO object store<br/>recordings + pgvector")]:::building
+    API["OmniSync API"]:::building
+    DWHOST{"Substrate HOST ★<br/>Hetzner vs Azure vs hybrid-local"}:::decision
+    CUST --> API
+    GRAPH --> API
+    OBJ --> API
   end
 
-  %% ===== 5. INTELLIGENCE LAYER =====
-  subgraph INT["5 · INTELLIGENCE LAYER"]
+  %% ============ ZONE 4 · PROJECTION SURFACES ============
+  subgraph Z4["ZONE 4 · PROJECTION SURFACES  (derived · staged · never source of truth)"]
     direction LR
-    AN["Analysis &amp; Agents<br/>inference · automation"]:::building
-    LOC["Local inference<br/>Ollama on local box"]:::planned
-    CLD["Cloud LLM escalation<br/>Anthropic / OpenAI"]:::planned
+    S1["Stage 1 · Notion orchestrator — CURRENT"]:::building
+    S2["Stage 2 · Notion control plane"]:::planned
+    S3["Stage 3 · AppFlowy (control) + Affine (content) — TARGET"]:::planned
+    PLANE["Plane — team PM surface<br/>(reconcile vs Notion/AppFlowy)"]:::building
+    EDGE["Notion → sanitized edge (egress)"]:::planned
+    S1 --> S2 -.-> S3 -.-> EDGE
   end
 
-  %% ===== 6. BUSINESS INTELLIGENCE =====
-  subgraph BI["6 · BUSINESS INTELLIGENCE / REPORTING"]
+  %% ============ BUSINESS INTELLIGENCE ============
+  subgraph BI["BUSINESS INTELLIGENCE  (consumes canonical via API)"]
     direction LR
-    MB["Metabase<br/>dashboards · MCP · CLI"]:::ready
-    INS["ERPNext Insights<br/>candidate BI tool"]:::planned
+    MB["Metabase · dashboards · MCP · CLI<br/>(ABES telephony / billing — TIC pipeline)"]:::ready
+    INS["ERPNext Insights (candidate)"]:::planned
   end
 
-  %% ===== INTERNAL COLLABORATION — CONTROL PLANES =====
-  subgraph COLLAB["INTERNAL COLLABORATION — CONTROL PLANES  (keep AI &amp; human work separate → no schema corruption)"]
+  %% ============ CROSS-CUTTING BANDS ============
+  subgraph ACCESS["ACCESS &amp; IDENTITY (gates the environment)"]
     direction LR
-    PLANE["Plane — HUMAN control plane<br/>PM · tasks · curated, finished work"]:::building
-    AF["AppFlowy — AI / AGENT control plane<br/>agent-driven work (e.g. clause version-control)"]:::planned
-    AFFINE["Affine — INTAKE / sandbox<br/>unstructured, in-progress (replaces Obsidian/OneNote/Whiteboard)"]:::planned
+    JC["JumpCloud — SSO / identity audit"]:::building
+    TS["Tailscale — zero-trust segmentation"]:::ready
   end
 
-  %% ===== INFRASTRUCTURE / HOSTING (reference band) =====
-  subgraph HOST["INFRASTRUCTURE / HOSTING  (current → target; see open decisions)"]
+  subgraph COMP["COMPLIANCE · HIPAA + DATA SOVEREIGNTY (spans all)"]
     direction LR
-    HZ["Hetzner — build/test/own-built<br/>ERPNext + internal stack (today)"]:::ready
-    AZ{"Azure — HIPAA / BAA out-of-box<br/>sensitive data + warehouse candidate"}:::decision
-    AWSN["AWS — TIC pipeline / processing<br/>(BYO models, cheaper compute)"]:::ready
-    LOCAL{"Hybrid local box — inference<br/>data sovereignty vs ops overhead"}:::decision
-    GG["Google → M365 — Veronica's tools<br/>migration in flight"]:::building
+    HIP["CMK encryption · TLS/HMAC · audit logging · row-level access · default-deny · local-first"]:::building
   end
 
-  %% ===== DEVSECOPS / SRE OVERLAY =====
-  subgraph SECOPS["DevSecOps / SRE OVERLAY  (compliance · audit · reliability — spans all)"]
+  subgraph HOST["INFRASTRUCTURE / HOSTING (current → target)"]
     direction LR
-    KUMA["Monitoring (Uptime Kuma) · Backups<br/>Caddy→NGINX reverse proxy"]:::ready
-    DSO["DevSecOps / SRE owner — TO HIRE<br/>HIPAA audit + reliability = full-time job"]:::gap
+    HZ["Hetzner — build/test/own (today)"]:::ready
+    AZ{"Azure — BAA out-of-box / sensitive"}:::decision
+    AWSN["AWS — TIC pipeline / processing"]:::ready
+    LOCAL{"Hybrid local box — inference"}:::decision
   end
 
-  %% ===== FLOWS =====
-  JC --> TS
-  TS ==> ERP
-  TS ==> AIPS
-  QB --> ERP
-  RT ==> AIPS
-  EM ==> OC
-  AIPS ==> OC
-  OC ==> HM
-  HM ==> HASH
-  HASH ==> PKG
-  PKG ==> DW
-  ERP ==> DW
-  DW ==> AN
-  DW ==> MB
-  DW ==> INS
-  AN --> LOC
-  LOC -.->|escalate de-identified prompt| CLD
-  AN ==> MB
-  PLANE -.->|curate / consume| DW
-  AF -.->|agents| AN
+  subgraph SEC["DevSecOps / SRE OVERLAY (compliance · audit · reliability)"]
+    direction LR
+    KUMA["Uptime Kuma · backups · NGINX"]:::ready
+    DSO["DevSecOps / SRE owner — TO HIRE"]:::gap
+  end
 
-  %% ===== HEAT-MAP COLORS =====
+  %% ================= FLOWS =================
+  Z1 --> PRE
+  PRE --> FAST
+  OLL ==> LAYER
+  PROMOTE ==> CUST
+  PROMOTE ==> GRAPH
+  PROMOTE ==> OBJ
+  API --> S1
+  API --> MB
+  API --> INS
+  API --> PLANE
+  HERMES -.operates.-> FAST
+  OPENCLAW -.operates.-> WRK
+  TS ==> FAST
+
+  %% ================= HEAT-MAP COLORS =================
   classDef ready fill:#C6E0B4,stroke:#548235,color:#000000;
   classDef building fill:#BDD7EE,stroke:#2E75B6,color:#000000;
   classDef planned fill:#F2F2F2,stroke:#999999,color:#000000;
   classDef gap fill:#F4B7B7,stroke:#C00000,color:#000000;
   classDef decision fill:#FFF2CC,stroke:#BF9000,stroke-width:2px,color:#000000;
+  classDef gate fill:#FFFBEB,stroke:#B45309,stroke-width:2px,color:#78350F;
+  classDef human fill:#FEF2F2,stroke:#B91C1C,stroke-width:2.5px,color:#7F1D1D;
 
-  %% ===== EDGE STYLES =====
-  %% 0,1,2 access(purple) · 4-10 HIPAA path(red) · 16 escalation(blue) · 18,19 collab(grey)
-  linkStyle 0,1,2 stroke:#7030A0,stroke-width:2px;
-  linkStyle 4,5,6,7,8,9,10 stroke:#C00000,stroke-width:2.5px;
-  linkStyle 16 stroke:#2E75B6,stroke-width:1.5px,stroke-dasharray:4 4;
-  linkStyle 18,19 stroke:#808080,stroke-width:1.5px,stroke-dasharray:5 5;
+  %% ================= EDGE STYLES =================
+  %% indices: 0,1 control-plane chain · 2-4 Z2 chain · 5-7 gates chain · 8-10 Z3→API ·
+  %%   11-13 Z4 chain · 14 Z1→PRE · 15 PRE→FAST · 16 OLL→LAYER(red) ·
+  %%   17,18,19 PROMOTE→canonical(red) · 20-23 API→surfaces · 24,25 control operates(grey) · 26 TS access(purple)
+  linkStyle 16,17,18,19 stroke:#C00000,stroke-width:2.5px;
+  linkStyle 24,25 stroke:#808080,stroke-width:1.5px,stroke-dasharray:5 5;
+  linkStyle 26 stroke:#7030A0,stroke-width:2px;
 
-  %% ===== BANDS =====
+  %% ================= BANDS =================
+  style CTRL fill:#EEF2FF,stroke:#3730A3;
+  style Z1 fill:#F8FAFC,stroke:#64748B;
+  style Z2 fill:#FFF7ED,stroke:#C2410C;
+  style GATES fill:#FFFBEB,stroke:#B45309,stroke-width:2px;
+  style Z3 fill:#ECFDF5,stroke:#047857,stroke-width:2px;
+  style Z4 fill:#FDF2F8,stroke:#BE185D;
+  style BI fill:#F4F7F2,stroke:#548235;
   style ACCESS fill:#F3EAFB,stroke:#7030A0;
-  style PHI fill:#FDECEA,stroke:#C00000;
-  style DMZ fill:#FDECEA,stroke:#C00000,stroke-width:2px;
+  style COMP fill:#EFF6FF,stroke:#1D4ED8;
   style HOST fill:#EAF4FB,stroke:#2E75B6;
-  style SECOPS fill:#FFF7E6,stroke:#BF9000;
-  style COLLAB fill:#F4F7F2,stroke:#548235;
+  style SEC fill:#FFF7E6,stroke:#BF9000;
   style LEGEND fill:#FFFFFF,stroke:#999999;
 
- </pre></div>
+</pre></div>
  <div class="grid">
-  <div class="card green"><h2>Guiding principles (the vision)</h2><ul>
-   <li><b>Separate human work from AI work</b> — Plane (human) vs AppFlowy (agent) so agents can't corrupt curated schemas.</li>
-   <li><b>PHI never crosses untreated</b> — air-gap DMZ de-identifies/anonymizes before data enters AMDG; neither side knows the other.</li>
-   <li><b>Consolidate &amp; simplify; proven over custom</b> — ~80% is off-the-shelf; spend rigor on the 20% showstoppers.</li>
-   <li><b>Data governance &amp; sovereignty</b> — keep control, but don't become a security company; outsource what isn't worth owning.</li>
+  <div class="card blue"><h2>What changed v0.1 &#8594; v0.2</h2><ul>
+   <li><b>OpenClaw + Hermes = control plane</b> (execute + orchestrate under a Local-AI reason layer), not a DMZ.</li>
+   <li><b>The "air-gap" = default-deny ingestion gates</b> (incl. a human gate for BAA/key-ceremony/compliance/go-no-go).</li>
+   <li><b>"Data warehouse" = the local-first canonical substrate</b> (Postgres custody + Neo4j/Graphiti graph + MinIO); host is the open call.</li>
+   <li><b>Canonical vs projection</b> — Notion/AppFlowy/Affine/Plane are all projections, never source of truth.</li>
+   <li><b>Staged by substitution:</b> Stage 1 Notion &#8594; Stage 3 AppFlowy + Affine; Notion ends as a sanitized edge.</li>
   </ul></div>
-  <div class="card amber"><h2>Open decisions (the amber)</h2><ul>
-   <li><b>Data warehouse host</b> — Hetzner vs Azure vs AWS (Snowflake too costly). <i>Cissy researching.</i></li>
-   <li><b>All-cloud vs hybrid-local inference</b> — local box mirrored to cloud for redundancy.</li>
-   <li><b>Azure vs AWS vs mixed</b> — Azure BAA out-of-box; AWS cheaper/BYO-model processing.</li>
-   <li><b>JumpCloud go/no-go</b> — <i>Mike: business case to Brian in 48h.</i></li>
-   <li><b>DevSecOps/SRE hire</b> — HIPAA audit + reliability gap.</li>
-   <li><b>Config lenses</b> — AMDG vs AIBs vs AMDG-for-AIBs.</li>
+  <div class="card amber"><h2>Open decisions</h2><ul>
+   <li>Canonical-substrate host — Hetzner vs Azure vs hybrid-local.</li>
+   <li>All-cloud vs hybrid-local inference.</li>
+   <li>Azure vs AWS vs mixed shop.</li>
+   <li>JumpCloud go/no-go (Mike &#8594; Brian, 48h).</li>
+   <li>DevSecOps/SRE hire (gap).</li>
+   <li><b>Plane vs Notion/AppFlowy</b> — reconcile team PM surface with projection staging.</li>
+   <li><b>ERPNext's role</b> vs the canonical graph (source + sanctioned store; PHI separate).</li>
   </ul></div>
-  <div class="card blue"><h2>Owners / next steps</h2><ul>
-   <li><b>Mike</b> — this diagram (source of truth); JumpCloud business case (48h).</li>
-   <li><b>Hannah</b> — notes/diagrams to Box <code>AMDG InfraDesign</code>; split into network/infra/data lenses.</li>
-   <li><b>Cissy</b> — warehouse options + cost + BI-tool fit (ERPNext Insights).</li>
-   <li><b>Team</b> — Brian BI/pipeline workshop; resolve contractor access to IP/data.</li>
+  <div class="card green"><h2>Owners / next steps</h2><ul>
+   <li><b>Mike</b> — this map; JumpCloud business case (48h).</li>
+   <li><b>Hannah</b> — OmniSync build; network/infra/data lenses.</li>
+   <li><b>Cissy</b> — substrate host + cost + BI fit (ERPNext Insights).</li>
+   <li><b>Team</b> — Brian BI/pipeline workshop; contractor access to IP/data.</li>
   </ul></div>
-  <div class="card red"><h2>Naming to confirm</h2><ul>
-   <li>Transcribed terms to verify: <b>Affine</b> (AFFiNE?), <b>AppFlowy</b>, <b>OpenClaw</b>, <b>Hermes</b>, <b>AIPS</b> (PHI source), <b>TIC/Cacheware</b> C++ pipeline, <b>Hetzner</b>.</li>
-   <li>Heat-map readiness is a first read from the call — <b>edit freely</b> in <code>Functional_Architecture.mmd</code>.</li>
+  <div class="card green"><h2>North-star principles</h2><ul>
+   <li>Max agent delegation; humans gate only the unavoidable. Default-deny.</li>
+   <li>Own canonical state; everything else is a projection. Migrate by substitution.</li>
+   <li>Adversarial-first; verification is the unit of trust (skeleton + muscle).</li>
   </ul></div>
  </div>
 </div>
-<footer>Edit the <code>&lt;pre class="mermaid"&gt;</code> block or <code>Functional_Architecture.mmd</code>. Colors: In place <code>#C6E0B4</code> · In progress <code>#BDD7EE</code> · Planned <code>#F2F2F2</code> · Gap <code>#F4B7B7</code> · Open decision <code>#FFF2CC</code>.</footer>
-<script>
- mermaid.initialize({startOnLoad:true,securityLevel:'loose',flowchart:{htmlLabels:true,curve:'basis'}});
- document.getElementById('dl').addEventListener('click',function(){var s=document.querySelector('#graph svg');if(!s){alert('still rendering');return;}var b=new Blob([new XMLSerializer().serializeToString(s)],{type:'image/svg+xml'});var u=URL.createObjectURL(b);var a=document.createElement('a');a.href=u;a.download='Functional_Architecture.svg';a.click();URL.revokeObjectURL(u);});
-</script>
+<footer>Edit <code>Functional_Architecture.mmd</code>. Source structure: Hannah's OmniSync (Box · AMDG InfraDesign). Heat-map readiness is a working read &#8212; adjust freely.</footer>
+<script>mermaid.initialize({startOnLoad:true,securityLevel:'loose',flowchart:{htmlLabels:true,curve:'basis'}});
+document.getElementById('dl').addEventListener('click',function(){var s=document.querySelector('#graph svg');if(!s){alert('still rendering');return;}var b=new Blob([new XMLSerializer().serializeToString(s)],{type:'image/svg+xml'});var u=URL.createObjectURL(b);var a=document.createElement('a');a.href=u;a.download='Functional_Architecture.svg';a.click();URL.revokeObjectURL(u);});</script>
 </body></html>

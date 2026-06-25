@@ -1,12 +1,24 @@
-# AMDG / ABES — Functional Architecture (v0.1 starting draft)
+# AMDG / ABES — Functional Architecture (v0.2 · reconciled with OmniSync)
 
 A **functional** architecture map — capabilities as boxes, color-coded by readiness —
-meant as a single source of truth to **set vision and align the team**, and a starting
-point to build from (Mike's "fifth-grader crayon" map: get the boxes on a page, then add detail).
+meant as a single source of truth to **set vision and align the team**.
 
-**Source:** Fathom call **"Hannah x Mike // Connect on Architecture"**, 2026-06-24
-(Mike Adkins, Hannah Schuele, Cissy Byrd) — https://fathom.video/calls/723282376.
-The diagram is exactly the next-step Mike committed to on that call.
+**v0.2** re-grounds the map in Hannah's authoritative **OmniSync gated/staged architecture**
+(dropped in Box · `AMDG InfraDesign`), keeping Mike's executive heat-map altitude and the
+business overlays (ERPNext, BI, access, hosting, DevSecOps) from the call.
+
+**Sources:**
+- Fathom call **"Hannah x Mike // Connect on Architecture"**, 2026-06-24 (Mike, Hannah, Cissy) — https://fathom.video/calls/723282376
+- Hannah's **OmniSync** repo (Box · AMDG InfraDesign): `omnisync-readme.md`, `agentic-harness-north-star.md`, `omnisync-gated-staged-architecture` — OmniSync structure is authoritative; business overlays come from the call.
+
+## What changed v0.1 → v0.2
+- **OpenClaw + Hermes are the CONTROL PLANE** (Execute + Orchestrate under a Local-AI "Reason" layer) — not a standalone de-identification DMZ as v0.1 drew. Today's stand-ins: Claude Desktop/Code → command queue → Notion AI/Claude Code.
+- **The "air-gap" = default-deny INGESTION GATES** (per-task, dependency-layer, runtime, and a human gate for BAA / key ceremony / compliance / go-no-go). Default is *don't move*; data stays local unless promoted.
+- **The "data warehouse" = the local-first CANONICAL SUBSTRATE** — Postgres append-only custody + Neo4j/Graphiti knowledge graph + MinIO + pgvector. Local-first by design → the open call is a *sovereign-substrate host*, not a cloud DW.
+- **Canonical vs projection** is the core invariant: Notion / AppFlowy / Affine / Plane are all *projections*, never source of truth.
+- **Staged migration by substitution:** Stage 1 Notion orchestrator (now) → Stage 2 Notion control plane → Stage 3 AppFlowy (control) + Affine (content); Notion ends as a sanitized egress edge.
+- **Storage decisions (2026-04-17):** NATS (not Redis); Postgres custody → Neo4j CE + pgvector (not Directus); MinIO; bge-m3 + local 8B/14B with cloud escalation.
+- **Names now confirmed:** OpenClaw, Hermes, Affine, AppFlowy, Ollama — plus NATS, Postgres custody, Neo4j/Graphiti, MinIO, FastAPI, bge-m3.
 
 ## Files
 | File | What it is |
@@ -26,40 +38,46 @@ The diagram is exactly the next-step Mike committed to on that call.
 
 Edge colors: **red** = HIPAA / PHI path · **purple** = access/identity · blue dashed = cloud-LLM escalation · grey dashed = collaboration.
 
-## Functional layers (top → bottom value flow)
-1. **Access & Identity** — JumpCloud (SSO, identity-based audit) + Tailscale (zero-trust tailnet). Gates everything.
-2. **Sources & System of Record** — ERPNext (ops/financials/AP-AR), Rethink (clinical), QuickBooks (legacy), inbound email/docs.
-3. **Sensitive / PHI Zone** — AIPS clinical PHI store, segmented (Azure candidate).
-4. **Anonymization — Air-Gap DMZ** — OpenClaw (de-identify/execution) + Hermes (metadata-only orchestration). VLAN30 DMZ / VLAN20 AI.
-5. **Data Pipeline & Warehouse** — TIC/Cacheware C++ hash-parse → packaging → **Data Warehouse (host TBD ★)**.
-6. **Intelligence Layer** — analysis & agents; local inference (Ollama) escalating de-identified prompts to cloud LLMs (Anthropic/OpenAI).
-7. **Business Intelligence** — Metabase (dashboards, MCP, CLI); ERPNext Insights (candidate).
+## Functional layers (OmniSync zones + business overlays)
+- **Control Plane** (spans top) — Reason → Orchestrate → Execute = **Local AI → Hermes → OpenClaw fleet** (today: Claude Desktop/Code → command queue → Notion AI/Claude Code). Build-time agents (Claude Code) are distinct from run-time agents.
+- **Zone 1 · Inputs** — Zoom Phone (★ ABES anchor lane), email, calendar, transcripts (Fireflies/Fathom), documents/notes; **business system-of-record** ERPNext / Rethink / QuickBooks.
+- **Zone 2 · Gated sorting pipeline** — FastAPI intake → NATS queue → workers (metadata/recording/transcript/parser) → Ollama entity extraction (local 8B/14B + bge-m3, cloud escalation).
+- **Ingestion gates (default-deny)** — per-task + dependency-layer gates, **human gates** (BAA / key ceremony / compliance / go-no-go), runtime data gates, promote-vs-stay-local. *This is the HIPAA boundary the call called the "air-gap."*
+- **Zone 3 · Canonical substrate (local-first — the data you own)** — Postgres append-only custody + Neo4j/Graphiti knowledge graph + MinIO + pgvector → **OmniSync API**. **Substrate host ★** is the open "data warehouse" decision.
+- **Zone 4 · Projection surfaces (derived, staged)** — Stage 1 Notion orchestrator (current) → Stage 2 Notion control plane → Stage 3 AppFlowy (control) + Affine (content); Plane as the team PM surface; Notion → sanitized edge.
+- **Business Intelligence** — Metabase (dashboards, MCP, CLI; ABES telephony/billing = TIC pipeline); ERPNext Insights (candidate).
 
-**Side bands:** Internal Collaboration control planes (Plane / AppFlowy / Affine), Infrastructure & Hosting (Hetzner today; Azure/AWS/hybrid-local target), DevSecOps/SRE overlay.
+**Cross-cutting bands:** Access & Identity (JumpCloud + Tailscale), Compliance/HIPAA + sovereignty, Infrastructure/Hosting (Hetzner today; Azure/AWS/hybrid target), DevSecOps/SRE overlay.
 
-## Guiding principles (the vision)
-- Separate human-moderated work from AI-driven work to prevent schema corruption.
-- PHI never crosses untreated — de-identify + anonymize in a DMZ; de-identified ≠ HIPAA-safe unless it can't be re-linked.
-- Consolidate & simplify; proven over custom ("you're not that special" — ~80% off-the-shelf).
-- Data governance & sovereignty (bet that SaaS is dying) — but don't become a security company.
-- Decision rigor on shared infrastructure: does control gained justify risk/overhead vs speed?
+## Guiding principles (north star — from `agentic-harness-north-star.md`)
+- Maximum agent delegation; humans gate only the unavoidable (legal, compliance, key ceremony, go/no-go).
+- Nothing advances without passing a gate; the default is **deny** (data stays local unless promoted).
+- Own your canonical state; everything else is a **projection** (derived, regenerable, removable).
+- Migrate by **substitution, not rebuild** — hold invariants constant so a component swap is not a re-architecture.
+- Adversarial-first; verification is the unit of trust. Skeleton (gated plan) + muscle (tight iterative loops).
+- An agent system is a **sorting machine** — staged/gated is choosing & measuring the right sort before scaling.
 
 ## Open decisions
-- Data-warehouse host (Hetzner vs Azure vs AWS; Snowflake too costly) — Cissy researching cost + BI fit.
+- **Canonical-substrate host** (Hetzner vs Azure vs hybrid-local; Snowflake too costly) — Cissy researching cost + BI fit.
 - All-cloud vs hybrid-local inference (sovereignty vs ops overhead).
 - Azure vs AWS vs mixed shop (Azure BAA out-of-box + tenant admin; AWS cheaper/BYO-model processing).
 - JumpCloud go/no-go — Mike's business case to Brian within 48h.
 - DevSecOps / SRE hire (HIPAA audit + reliability = full-time role; current gap).
+- **Plane vs Notion/AppFlowy** — reconcile the team PM surface with the OmniSync projection staging.
+- **ERPNext's role** vs the canonical graph — system-of-record that is both an input source and a sanctioned store (PHI held separately); confirm placement.
 - Config lenses: AMDG vs AIBs vs AMDG-for-AIBs.
 
 ## Owners / next steps
-- **Mike** — this diagram; JumpCloud business case (48h).
-- **Hannah** — notes/diagrams to Box `AMDG InfraDesign`; split into network / infra / data-flow lenses; keep chipping technical side.
-- **Cissy** — warehouse options + cost + BI-tool fit (ERPNext Insights).
+- **Mike** — this functional map (single source of truth); JumpCloud business case (48h).
+- **Hannah** — OmniSync technical build; split network / infra / data-flow lenses; keep canonical-vs-projection discipline.
+- **Cissy** — substrate/warehouse host options + cost + BI-tool fit (ERPNext Insights).
 - **Team** — Brian to run a BI/pipeline workshop; resolve contractor access to IP/data.
 
-## ⚠ Confirm these (transcription guesses)
-`Affine` (AFFiNE?), `AppFlowy`, `OpenClaw`, `Hermes`, `AIPS` (clinical PHI source), `TIC / Cacheware` C++ pipeline, `Hetzner`. Readiness colors are a first read from the call — **edit freely** in the `.mmd`.
+## Notes
+Readiness colors are a working read — **edit freely** in the `.mmd`. Open reconciliation items are
+flagged above (Plane vs Notion/AppFlowy; ERPNext vs the canonical graph). The OmniSync source
+diagram lives in Box (`omnisync-gated-staged-architecture`); this map is the executive/functional
+projection of it with the business systems and readiness overlaid.
 
 ## Re-render
 ```
