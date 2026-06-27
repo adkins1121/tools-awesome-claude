@@ -1,0 +1,153 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AMDG/ABES — Physical / Deployment View v0.1 (VLAN trust zones)</title><style>
+ body{margin:0;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#1a1a1a;background:#fafafa}
+ header{padding:16px 24px;background:#1f3864;color:#fff} header h1{margin:0;font-size:18px} header p{margin:4px 0 0;font-size:12px;opacity:.85}
+ .bar{display:flex;flex-wrap:wrap;gap:13px;align-items:center;padding:10px 24px;background:#fff;border-bottom:1px solid #e3e3e3;font-size:12px}
+ .chip{display:inline-flex;align-items:center;gap:6px} .sw{width:14px;height:14px;border:1px solid #888;border-radius:3px;display:inline-block}
+ .dia{transform:rotate(45deg);width:11px;height:11px;border:2px solid #BF9000;background:#FFF2CC} .ovl{width:15px;height:11px;border:1.5px dashed #7F7F7F;background:#fff}
+ button{font-size:12px;padding:6px 12px;border:1px solid #1f3864;background:#fff;color:#1f3864;border-radius:5px;cursor:pointer}
+ .wrap{padding:16px 24px} .diagram{background:#fff;border:1px solid #e3e3e3;border-radius:8px;padding:10px;overflow:auto}
+ footer{padding:12px 24px;font-size:11px;color:#666}
+</style><script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script></head><body>
+<header><h1>AMDG/ABES — Physical / Deployment View v0.1 (VLAN trust zones)</h1><p>Source: omnisync-plan &sect;3. AI zone no-WAN; NATS sole bridge; cloud escalation only via de-identifying DMZ proxy. Hosting placement is the open decision.</p></header>
+<div class="bar">
+ <span class="chip"><span class="sw" style="background:#C6E0B4"></span>In place</span>
+ <span class="chip"><span class="sw" style="background:#BDD7EE"></span>In progress</span>
+ <span class="chip"><span class="sw" style="background:#F2F2F2"></span>Planned/target</span>
+ <span class="chip"><span class="sw" style="background:#F4B7B7"></span>Gap</span>
+ <span class="chip"><span class="dia"></span>Open decision</span>
+ <span class="chip"><span class="ovl"></span>&#9651; call overlay (confirm)</span>
+ <span style="flex:1"></span><button id="dl">Download SVG</button>
+</div>
+<div class="wrap"><div class="diagram"><pre class="mermaid" id="graph">
+%% AMDG / ABES — PHYSICAL / DEPLOYMENT VIEW  v0.1
+%% Source: Hannah's OmniSync consolidated plan §3 "Target architecture (sovereign)" — network
+%%   topology (Box · AMDG InfraDesign / docs/omnisync-plan.md, 2026-05-28) + the 6/24 call.
+%% The TRUST ZONING is the durable design; WHERE each zone physically lands (on-prem vs
+%%   Hetzner/Azure/hybrid) is the open 6/24 hosting decision, overlaid as a callout.
+%% Node fill = readiness heat-map; subgraph band = network trust zone.
+%% Invariants: AI zone has NO WAN; NATS is the ONLY inter-zone bridge; the only path from the
+%%   AI zone to the internet is the DMZ de-identifying, logged cloud-LLM proxy (explicit escalation).
+
+flowchart TB
+  subgraph LEGEND["READINESS HEAT-MAP  ·  band color = network trust zone  ·  diamond = open decision"]
+    direction LR
+    L1["In place / running"]:::ready
+    L2["In progress"]:::building
+    L3["Planned / target (deploy not yet stood up — S1)"]:::planned
+    L4["Gap / at risk"]:::gap
+    L5{"Open decision"}:::decision
+  end
+
+  %% ============ ACCESS / IDENTITY ============
+  subgraph ACCESS["ACCESS &amp; IDENTITY"]
+    direction LR
+    TS["Tailscale — trusted access tunnel"]:::ready
+    JC["JumpCloud — SSO / identity audit<br/>(maps agent · person · process)"]:::building
+  end
+
+  %% ============ EXTERNAL / WAN ============
+  subgraph EXT["EXTERNAL · WAN  (untrusted — outside the perimeter)"]
+    direction LR
+    ZOOM["Zoom Phone<br/>(ABES telephony — anchor lane)"]:::ready
+    MSFT["Outlook / Gmail · Calendar"]:::ready
+    FIRE["Fireflies transcripts"]:::ready
+    CLOUDLLM["Cloud LLMs — Claude / GPT<br/>(escalation only)"]:::ready
+  end
+
+  %% ============ VLAN 30 · DMZ ============
+  subgraph DMZ["VLAN 30 · DMZ  (always-on · the ONLY zone with WAN)"]
+    direction LR
+    ZWEBHOOK["FastAPI webhook (Zoom)"]:::building
+    MSGRAPH["MS Graph connector"]:::building
+    OPENCLAW["OpenClaw connectors<br/>(ingest / execute fleet)"]:::planned
+    NATS[("NATS — sole inter-zone bridge")]:::planned
+    PROXY["Cloud-LLM proxy<br/>de-identify · logged"]:::planned
+  end
+
+  %% ============ VLAN 20 · AI ZONE (NO WAN) ============
+  subgraph AIZ["VLAN 20 · AI ZONE  —  NO WAN  (Hyper-V VM)"]
+    direction LR
+    HERMES["Hermes — agent brain<br/>(orchestrate; only thing that talks to NATS)"]:::planned
+    OLLAMA["Ollama (GPU)<br/>local 8B/14B + bge-m3"]:::planned
+    CUST[("Postgres custody<br/>append-only · immutable")]:::planned
+    NEO[("Neo4j + Graphiti<br/>knowledge graph")]:::planned
+    PGV[("Postgres + pgvector")]:::planned
+    HUMANL["AppFlowy / AFFiNE<br/>(local-first human layer)"]:::planned
+  end
+
+  %% ============ VLAN 10 · TRUSTED ============
+  subgraph TRUST["VLAN 10 · TRUSTED  (MSI Titan host)"]
+    direction LR
+    OBS["Obsidian vault · daily work"]:::ready
+    PLANE["△ Plane / Notion — team PM surface<br/>(call · reconcile; not in §3 topology)"]:::overlay
+  end
+
+  %% ============ COMPLIANCE BAND ============
+  subgraph COMP["COMPLIANCE  (HIPAA + sovereignty)"]
+    direction LR
+    BAA["BAA applies at WAN egress + any cloud-hosted zone<br/>PHI lives only in custody/graph (VLAN 20)"]:::building
+    TAX["Taxonomy: Personal | Work.AMDG | HIPAA | Public<br/>enforced at ingest + projection · write lanes 1/2/3"]:::building
+  end
+
+  %% ============ △ OVERLAY (call — not in §3 topology) ============
+  JC["△ JumpCloud — SSO / identity audit<br/>(call · business case pending)"]:::overlay
+
+  %% ============ HOSTING PLACEMENT DECISION ============
+  HPLACE{"HOSTING PLACEMENT ★ (open · 6/24)<br/>target: on-prem MSI/Hyper-V/Unifi (Hannah)<br/>open: Hetzner today · Azure (BAA) · hybrid-local"}:::decision
+
+  %% ============ FLOWS ============
+  ZOOM --> ZWEBHOOK
+  MSFT --> MSGRAPH
+  FIRE --> OPENCLAW
+  ZWEBHOOK --> NATS
+  MSGRAPH --> NATS
+  OPENCLAW --> NATS
+  NATS <==>|only bridge| HERMES
+  HERMES --> OLLAMA
+  HERMES --> CUST
+  CUST --> NEO
+  CUST --> PGV
+  HERMES --> NEO
+  NEO --> HUMANL
+  NEO --> OBS
+  HERMES -.->|hard cases · de-identified| PROXY
+  PROXY -.->|explicit escalation only| CLOUDLLM
+  TS ==> OBS
+  TS ==> HUMANL
+  JC -.identity / audit (confirm).-> HERMES
+  HPLACE -.placement.-> NATS
+
+  %% ============ HEAT-MAP COLORS ============
+  classDef ready fill:#C6E0B4,stroke:#548235,color:#000000;
+  classDef building fill:#BDD7EE,stroke:#2E75B6,color:#000000;
+  classDef planned fill:#F2F2F2,stroke:#999999,color:#000000;
+  classDef gap fill:#F4B7B7,stroke:#C00000,color:#000000;
+  classDef decision fill:#FFF2CC,stroke:#BF9000,stroke-width:2px,color:#000000;
+  classDef overlay fill:#FFFFFF,stroke:#7F7F7F,stroke-width:1.5px,stroke-dasharray:5 5,color:#444444;
+
+  %% ============ EDGE STYLES ============
+  %% indices: 0-2 ext→connectors · 3-5 connectors→NATS · 6 NATS<->Hermes (sole bridge, red thick)
+  %%   · 7-9 Hermes→stores · 10 CUST→PGV · 11 Hermes→NEO · 12 NEO→HUMANL · 13 NEO→OBS
+  %%   · 14,15 escalation (red dashed) · 16,17 access (purple) · 18 identity (purple dashed)
+  %%   · 19 placement (amber dashed)
+  linkStyle 6 stroke:#C00000,stroke-width:3px;
+  linkStyle 14,15 stroke:#C00000,stroke-width:1.5px,stroke-dasharray:4 4;
+  linkStyle 16,17 stroke:#7030A0,stroke-width:2px;
+  linkStyle 18 stroke:#7030A0,stroke-width:1.5px,stroke-dasharray:5 5;
+  linkStyle 19 stroke:#BF9000,stroke-width:1.5px,stroke-dasharray:5 5;
+
+  %% ============ ZONE BANDS ============
+  style EXT fill:#F2F2F2,stroke:#808080,stroke-dasharray:4 4;
+  style DMZ fill:#FCE4D6,stroke:#C55A11,stroke-width:2px;
+  style AIZ fill:#DEEBF7,stroke:#2E75B6,stroke-width:3px;
+  style TRUST fill:#E2EFDA,stroke:#548235,stroke-width:2px;
+  style ACCESS fill:#F3EAFB,stroke:#7030A0;
+  style COMP fill:#EFF6FF,stroke:#1D4ED8;
+  style LEGEND fill:#FFFFFF,stroke:#999999;
+
+</pre></div></div>
+<footer>CANONICAL = Hannah's OmniSync docs; &#9651; overlay = 6/24 call (confirm). Edit the .mmd. See TECHNICAL_REVIEW.md for the slop audit.</footer>
+<script>mermaid.initialize({startOnLoad:true,securityLevel:'loose',flowchart:{htmlLabels:true,curve:'basis'}});
+document.getElementById('dl').addEventListener('click',function(){var s=document.querySelector('#graph svg');if(!s)return;var b=new Blob([new XMLSerializer().serializeToString(s)],{type:'image/svg+xml'});var u=URL.createObjectURL(b);var a=document.createElement('a');a.href=u;a.download='diagram.svg';a.click();URL.revokeObjectURL(u);});</script>
+</body></html>

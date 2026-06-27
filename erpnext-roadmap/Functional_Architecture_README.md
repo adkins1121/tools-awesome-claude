@@ -1,4 +1,16 @@
-# AMDG / ABES — Functional Architecture (v0.2 · reconciled with OmniSync)
+# AMDG / ABES — Architecture (Functional v0.3 + Physical/Deployment v0.1)
+
+> **Slop-reviewed.** Every design element was checked against Hannah's OmniSync docs; see
+> [`TECHNICAL_REVIEW.md`](TECHNICAL_REVIEW.md) for the audit. **Provenance convention:**
+> CANONICAL = stated in the OmniSync docs (drawn plain); **△ overlay** = from the 6/24 call
+> (business systems / hosting), not in the docs, drawn dashed and marked "confirm".
+>
+> **Deliverables:** `Functional_Architecture.{mmd,svg,pdf,html}` ·
+> `Deployment_Architecture.{mmd,svg,pdf,html}` · `Architecture_Pack_Brief.pdf` (both views +
+> review table) · `TECHNICAL_REVIEW.md`.
+
+---
+
 
 A **functional** architecture map — capabilities as boxes, color-coded by readiness —
 meant as a single source of truth to **set vision and align the team**.

@@ -1,27 +1,23 @@
-%% AMDG / ABES — FUNCTIONAL ARCHITECTURE  v0.2  (reconciled with Hannah's OmniSync)
-%% Sources:
-%%   - Fathom call "Hannah x Mike // Connect on Architecture" 2026-06-24 (Mike, Hannah, Cissy)
-%%   - Hannah's OmniSync repo dropped in Box "AMDG InfraDesign" (omnisync README, north-star,
-%%     omnisync-gated-staged-architecture). OmniSync structure is authoritative; business
-%%     overlays (ERPNext, BI, access, hosting, DevSecOps) come from the call.
-%% Altitude: executive functional map + readiness heat-map (Mike's "where are we" view).
-%% v0.2 corrects v0.1: OpenClaw+Hermes are the CONTROL PLANE (execute+orchestrate), not a DMZ;
-%%   the "air-gap" = default-deny INGESTION GATES; the "data warehouse" = the local-first
-%%   CANONICAL SUBSTRATE (custody + graph + object store); all human surfaces are PROJECTIONS.
+%% AMDG / ABES — FUNCTIONAL ARCHITECTURE  v0.3  (slop-reviewed; provenance-tagged)
+%% CANONICAL structure = Hannah's OmniSync docs (omnisync-readme, omnisync-plan §1-§7,
+%%   north-star, gated-staged architecture). △ OVERLAY = 6/24 call (business systems/hosting),
+%%   NOT in the OmniSync docs — quarantined and marked "confirm". See TECHNICAL_REVIEW.md.
+%% Node fill = readiness heat-map. Lanes: ★ anchor = ABES Zoom-Phone telephony (HIPAA proving
+%%   ground); ◆ MVP/EA = email-parse + transcript-parse for Bryan (first PoC, plan §BLUF).
 
 flowchart TB
-  %% ================= LEGEND =================
-  subgraph LEGEND["READINESS HEAT-MAP  ·  hexagon = gate  ·  red hexagon = HUMAN gate  ·  diamond = open decision"]
+  subgraph LEGEND["READINESS HEAT-MAP · hexagon = gate · red hex = HUMAN gate · diamond = open decision · △ = call overlay (confirm)"]
     direction LR
-    L1["In place / operational"]:::ready
-    L2["In progress / building"]:::building
+    L1["In place / running"]:::ready
+    L2["In progress"]:::building
     L3["Planned / target"]:::planned
     L4["Gap / at risk"]:::gap
     L5{"Open decision"}:::decision
+    L6["△ overlay — from 6/24 call, not in OmniSync docs"]:::overlay
   end
 
-  %% ============ CONTROL PLANE (spans top) ============
-  subgraph CTRL["CONTROL PLANE — REASON → ORCHESTRATE → EXECUTE  (kept separate at every stage)"]
+  %% ============ CONTROL PLANE (canonical) ============
+  subgraph CTRL["CONTROL PLANE — REASON → ORCHESTRATE → EXECUTE (separate at every stage)"]
     direction LR
     REASON["Local AI · REASON<br/>(today: Claude Desktop / Code)"]:::planned
     HERMES["Hermes · ORCHESTRATE<br/>(today: command queue)"]:::planned
@@ -29,30 +25,30 @@ flowchart TB
     REASON -->|reason| HERMES -->|orchestrate| OPENCLAW
   end
 
-  %% ============ ZONE 1 · INPUTS ============
-  subgraph Z1["ZONE 1 · INPUTS  (disparate, unsorted)"]
+  %% ============ ZONE 1 · INPUTS (canonical) ============
+  subgraph Z1["ZONE 1 · INPUTS — disparate, unsorted  (★ anchor = telephony · ◆ MVP/EA = email+transcript)"]
     direction LR
-    ZP["Zoom Phone ★ anchor lane<br/>calls · recordings · SMS"]:::building
-    EM["Email (Gmail / Outlook)"]:::building
-    TR["Transcripts (Fireflies / Fathom)"]:::ready
-    DOC["Documents · calendar · notes"]:::building
-    ERP["ERPNext · Rethink · QuickBooks<br/>business system-of-record"]:::building
+    ZOOM["Zoom Phone ★<br/>calls · recordings · SMS"]:::building
+    EM["Email — Outlook / Gmail ◆"]:::building
+    TR["Transcripts — Fireflies / Fathom ◆"]:::ready
+    CAL["Calendar"]:::ready
+    DOC["Documents · loose notes"]:::building
   end
 
   PRE{{"pre-build validation (build-time)"}}:::gate
 
-  %% ============ ZONE 2 · GATED SORTING PIPELINE ============
+  %% ============ ZONE 2 · GATED SORTING PIPELINE (canonical) ============
   subgraph Z2["ZONE 2 · GATED SORTING PIPELINE"]
     direction LR
     FAST["FastAPI intake receiver"]:::building
-    NATS[("NATS queue · intake.raw")]:::building
+    NATS[("NATS — intake.raw")]:::planned
     WRK["Workers<br/>metadata · recording · transcript · parser"]:::building
-    OLL["Ollama entity extraction<br/>local 8B/14B + bge-m3 · cloud escalation"]:::building
+    OLL["Ollama entity extraction<br/>local 8B/14B + bge-m3 · cloud escalation"]:::planned
     FAST --> NATS --> WRK --> OLL
   end
 
-  %% ============ INGESTION GATES (the HIPAA boundary / the old "air-gap") ============
-  subgraph GATES["INGESTION GATES · DEFAULT-DENY  (the HIPAA boundary — data stays local unless promoted)"]
+  %% ============ INGESTION GATES · default-deny (canonical) ============
+  subgraph GATES["INGESTION GATES · DEFAULT-DENY  (HIPAA boundary — stays local unless promoted)"]
     direction LR
     LAYER{{"per-task + dependency-layer gates"}}:::gate
     HUMAN{{"HUMAN gates<br/>BAA · key ceremony · compliance · go/no-go"}}:::human
@@ -61,79 +57,61 @@ flowchart TB
     LAYER --> HUMAN --> RUNTIME --> PROMOTE
   end
 
-  %% ============ ZONE 3 · CANONICAL SUBSTRATE ============
-  subgraph Z3["ZONE 3 · CANONICAL SUBSTRATE  (local-first — the data you OWN; = the 'data warehouse' decision)"]
+  %% ============ ZONE 3 · CANONICAL SUBSTRATE (canonical) ============
+  subgraph Z3["ZONE 3 · CANONICAL SUBSTRATE — local-first, the data you OWN"]
     direction LR
-    CUST[("Postgres custody<br/>append-only, immutable")]:::building
-    GRAPH[("Neo4j + Graphiti<br/>knowledge graph")]:::building
-    OBJ[("MinIO object store<br/>recordings + pgvector")]:::building
-    API["OmniSync API"]:::building
-    DWHOST{"Substrate HOST ★<br/>Hetzner vs Azure vs hybrid-local"}:::decision
+    CUST[("Postgres custody<br/>append-only, immutable")]:::planned
+    NEO[("Neo4j CE + Graphiti<br/>knowledge graph")]:::planned
+    PGV[("Postgres + pgvector<br/>passage chunks · bge-m3")]:::planned
+    OBJ[("MinIO — object store<br/>recordings")]:::planned
+    API["OmniSync API"]:::planned
+    DWHOST{"Substrate HOST ★<br/>target: on-prem MSI/Hyper-V/Unifi<br/>open (6/24): Hetzner today · Azure · hybrid"}:::decision
     CUST --> API
-    GRAPH --> API
+    NEO --> API
+    PGV --> API
     OBJ --> API
   end
 
-  %% ============ ZONE 4 · PROJECTION SURFACES ============
-  subgraph Z4["ZONE 4 · PROJECTION SURFACES  (derived · staged · never source of truth)"]
+  %% ============ ZONE 4 · PROJECTION SURFACES (canonical) ============
+  subgraph Z4["ZONE 4 · PROJECTION SURFACES — derived, staged, never source of truth"]
     direction LR
+    OBS["Obsidian vault<br/>current EA context projection"]:::ready
     S1["Stage 1 · Notion orchestrator — CURRENT"]:::building
-    S2["Stage 2 · Notion control plane"]:::planned
     S3["Stage 3 · AppFlowy (control) + Affine (content) — TARGET"]:::planned
-    PLANE["Plane — team PM surface<br/>(reconcile vs Notion/AppFlowy)"]:::building
     EDGE["Notion → sanitized edge (egress)"]:::planned
-    S1 --> S2 -.-> S3 -.-> EDGE
+    S1 -.-> S3 -.-> EDGE
   end
 
-  %% ============ BUSINESS INTELLIGENCE ============
-  subgraph BI["BUSINESS INTELLIGENCE  (consumes canonical via API)"]
+  %% ============ COMPLIANCE BAND (canonical) ============
+  subgraph COMP["COMPLIANCE · HIPAA + DATA SOVEREIGNTY"]
     direction LR
-    MB["Metabase · dashboards · MCP · CLI<br/>(ABES telephony / billing — TIC pipeline)"]:::ready
-    INS["ERPNext Insights (candidate)"]:::planned
+    HIP["CMK encryption · TLS/HMAC · Tailscale segmentation · audit logging · row-level access · default-deny · local-first"]:::building
   end
 
-  %% ============ CROSS-CUTTING BANDS ============
-  subgraph ACCESS["ACCESS &amp; IDENTITY (gates the environment)"]
+  %% ============ △ BUSINESS SYSTEMS & OVERLAYS — 6/24 call (NOT in OmniSync docs) ============
+  subgraph OVL["△ BUSINESS SYSTEMS &amp; OVERLAYS — 6/24 call · placement vs substrate TBD (confirm)"]
     direction LR
-    JC["JumpCloud — SSO / identity audit"]:::building
-    TS["Tailscale — zero-trust segmentation"]:::ready
+    ERP["△ ERPNext · Rethink · QuickBooks<br/>business system-of-record"]:::overlay
+    BIZ["△ Metabase BI ← TIC/Cacheware C++ pipeline (AWS)<br/>separate existing analytics · ERPNext Insights candidate"]:::overlay
+    JC["△ JumpCloud — SSO / identity (business case pending)"]:::overlay
+    PLANE["△ Plane — team PM surface (reconcile vs Notion/AppFlowy)"]:::overlay
+    DSO["△ DevSecOps / SRE owner — TO HIRE"]:::overlay
   end
 
-  subgraph COMP["COMPLIANCE · HIPAA + DATA SOVEREIGNTY (spans all)"]
-    direction LR
-    HIP["CMK encryption · TLS/HMAC · audit logging · row-level access · default-deny · local-first"]:::building
-  end
-
-  subgraph HOST["INFRASTRUCTURE / HOSTING (current → target)"]
-    direction LR
-    HZ["Hetzner — build/test/own (today)"]:::ready
-    AZ{"Azure — BAA out-of-box / sensitive"}:::decision
-    AWSN["AWS — TIC pipeline / processing"]:::ready
-    LOCAL{"Hybrid local box — inference"}:::decision
-  end
-
-  subgraph SEC["DevSecOps / SRE OVERLAY (compliance · audit · reliability)"]
-    direction LR
-    KUMA["Uptime Kuma · backups · NGINX"]:::ready
-    DSO["DevSecOps / SRE owner — TO HIRE"]:::gap
-  end
-
-  %% ================= FLOWS =================
+  %% ============ FLOWS ============
   Z1 --> PRE
   PRE --> FAST
   OLL ==> LAYER
   PROMOTE ==> CUST
-  PROMOTE ==> GRAPH
+  PROMOTE ==> NEO
   PROMOTE ==> OBJ
   API --> S1
-  API --> MB
-  API --> INS
-  API --> PLANE
+  API --> OBS
   HERMES -.operates.-> FAST
   OPENCLAW -.operates.-> WRK
-  TS ==> FAST
+  API -. "integration TBD · confirm" .-> OVL
 
-  %% ================= HEAT-MAP COLORS =================
+  %% ============ HEAT-MAP COLORS ============
   classDef ready fill:#C6E0B4,stroke:#548235,color:#000000;
   classDef building fill:#BDD7EE,stroke:#2E75B6,color:#000000;
   classDef planned fill:#F2F2F2,stroke:#999999,color:#000000;
@@ -141,25 +119,23 @@ flowchart TB
   classDef decision fill:#FFF2CC,stroke:#BF9000,stroke-width:2px,color:#000000;
   classDef gate fill:#FFFBEB,stroke:#B45309,stroke-width:2px,color:#78350F;
   classDef human fill:#FEF2F2,stroke:#B91C1C,stroke-width:2.5px,color:#7F1D1D;
+  classDef overlay fill:#FFFFFF,stroke:#7F7F7F,stroke-width:1.5px,stroke-dasharray:5 5,color:#444444;
 
-  %% ================= EDGE STYLES =================
-  %% indices: 0,1 control-plane chain · 2-4 Z2 chain · 5-7 gates chain · 8-10 Z3→API ·
-  %%   11-13 Z4 chain · 14 Z1→PRE · 15 PRE→FAST · 16 OLL→LAYER(red) ·
-  %%   17,18,19 PROMOTE→canonical(red) · 20-23 API→surfaces · 24,25 control operates(grey) · 26 TS access(purple)
+  %% ============ EDGE STYLES ============
+  %% chains: 0,1 control · 2,3,4 Z2 · 5,6,7 gates · 8,9,10,11 Z3→API · 12,13 Z4 staged
+  %% spine: 14 Z1→PRE · 15 PRE→FAST · 16 OLL→LAYER(red) · 17,18,19 PROMOTE→stores(red)
+  %%        20 API→S1 · 21 API→OBS · 22,23 operates(grey) · 24 API→OVL(overlay)
   linkStyle 16,17,18,19 stroke:#C00000,stroke-width:2.5px;
-  linkStyle 24,25 stroke:#808080,stroke-width:1.5px,stroke-dasharray:5 5;
-  linkStyle 26 stroke:#7030A0,stroke-width:2px;
+  linkStyle 22,23 stroke:#808080,stroke-width:1.5px,stroke-dasharray:5 5;
+  linkStyle 24 stroke:#7F7F7F,stroke-width:1.5px,stroke-dasharray:4 4;
 
-  %% ================= BANDS =================
+  %% ============ BANDS ============
   style CTRL fill:#EEF2FF,stroke:#3730A3;
   style Z1 fill:#F8FAFC,stroke:#64748B;
   style Z2 fill:#FFF7ED,stroke:#C2410C;
   style GATES fill:#FFFBEB,stroke:#B45309,stroke-width:2px;
   style Z3 fill:#ECFDF5,stroke:#047857,stroke-width:2px;
   style Z4 fill:#FDF2F8,stroke:#BE185D;
-  style BI fill:#F4F7F2,stroke:#548235;
-  style ACCESS fill:#F3EAFB,stroke:#7030A0;
   style COMP fill:#EFF6FF,stroke:#1D4ED8;
-  style HOST fill:#EAF4FB,stroke:#2E75B6;
-  style SEC fill:#FFF7E6,stroke:#BF9000;
+  style OVL fill:#FAFAFA,stroke:#7F7F7F,stroke-dasharray:6 4;
   style LEGEND fill:#FFFFFF,stroke:#999999;
